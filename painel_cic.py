@@ -8,16 +8,12 @@ API_URL = "https://pix-guardiao-analisar-api-wafno7njtq-rj.a.run.app"
 
 # --- CONEXÃO COM O BANCO DE DADOS ---
 try:
-    # Ele tentará encontrar a chave 'FIRESTORE_CREDENTIALS'
-    # Se não encontrar, ele assumirá que todo o 'secrets' é a credencial.
-    if "FIRESTORE_CREDENTIALS" in st.secrets:
-        creds = st.secrets.FIRESTORE_CREDENTIALS
-    else:
-        creds = st.secrets
-    db = firestore.Client.from_service_account_info(creds)
+    # Acessa o dicionário de credenciais que nomeamos como FIRESTORE_CREDENTIALS no TOML
+    creds_dict = st.secrets["FIRESTORE_CREDENTIALS"]
+    db = firestore.Client.from_service_account_info(creds_dict)
 except Exception as e:
     st.error(f"Falha ao conectar no Firestore com as credenciais: {e}")
-    st.stop()
+    st.stop()```
 
 # --- INTERFACE ---
 st.set_page_config(layout="wide", page_title="CIC - PixGuardiao")

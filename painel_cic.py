@@ -8,8 +8,9 @@ API_URL = "https://pix-guardiao-analisar-api-wafno7njtq-rj.a.run.app"
 
 # --- CONEXÃO COM O BANCO DE DADOS ---
 try:
-    # Acessa o dicionário completo de credenciais dentro de st.secrets
-    db = firestore.Client.from_service_account_info(st.secrets.FIRESTORE_CREDENTIALS)
+    # Acessa st.secrets como um dicionário.
+    # As chaves do seu arquivo JSON agora são chaves de primeiro nível em st.secrets
+    db = firestore.Client.from_service_account_info(st.secrets)
 except Exception as e:
     st.error(f"Falha ao conectar no Firestore com as credenciais: {e}")
     st.stop()

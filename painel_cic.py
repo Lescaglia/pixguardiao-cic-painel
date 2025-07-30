@@ -13,7 +13,7 @@ try:
     db = firestore.Client.from_service_account_info(creds_dict)
 except Exception as e:
     st.error(f"Falha ao conectar no Firestore com as credenciais: {e}")
-    st.stop()```
+    st.stop()
 
 # --- INTERFACE ---
 st.set_page_config(layout="wide", page_title="CIC - PixGuardiao")

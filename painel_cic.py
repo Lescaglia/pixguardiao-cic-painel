@@ -8,10 +8,11 @@ API_URL = "https://pix-guardiao-analisar-api-wafno7njtq-rj.a.run.app"
 
 # --- CONEXÃO COM O BANCO DE DADOS ---
 try:
-    firestore_creds = st.secrets["FIRESTORE_CREDENTIALS"]
-    db = firestore.Client.from_service_account_info(firestore_creds)
+    # Acessa o dicionário completo de credenciais dentro de st.secrets
+    db = firestore.Client.from_service_account_info(st.secrets.FIRESTORE_CREDENTIALS)
 except Exception as e:
-    ...
+    st.error(f"Falha ao conectar no Firestore com as credenciais: {e}")
+    st.stop()
 
 # --- INTERFACE ---
 st.set_page_config(layout="wide", page_title="CIC - PixGuardiao")

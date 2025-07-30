@@ -7,7 +7,15 @@ from google.cloud import firestore
 API_URL = "https://pix-guardiao-analisar-api-wafno7njtq-rj.a.run.app"
 
 # --- CONEXÃO COM O BANCO DE DADOS ---
-db = firestore.Client(project="pixguardiao-app")
+try:
+    # Tenta usar as credenciais secretas armazenadas no Streamlit Cloud
+    firestore_creds = st.secrets["FIRESTORE_CREDENTIALS"]
+    db = firestore.Client.from_service_account_info(firestore_creds)
+except Exception as e:
+    st.error(f"Falha ao conectar no Firestore com as credenciais: {e}")
+    # Se a conexão falhar, o restante do código que usa 'db' irá falhar
+    # e a mensagem de erro será clara para o usuário.
+    st.stop()
 
 # --- INTERFACE ---
 st.set_page_config(layout="wide", page_title="CIC - PixGuardiao")

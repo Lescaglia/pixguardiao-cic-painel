@@ -2,20 +2,33 @@ import streamlit as st
 import requests
 import pandas as pd
 from google.cloud import firestore
+import json
 
 # --- CONFIGURAÇÃO ---
 API_URL = "https://pix-guardiao-analisar-api-wafno7njtq-rj.a.run.app"
 
-# --- CONEXÃO COM O BANCO DE DADOS ---
-try:
-    # Acessa o dicionário de credenciais que nomeamos como FIRESTORE_CREDENTIALS no TOML
-    creds_dict = st.secrets["FIRESTORE_CREDENTIALS"]
-    db = firestore.Client.from_service_account_info(creds_dict)
-except Exception as e:
-    st.error(f"Falha ao conectar no Firestore com as credenciais: {e}")
-    st.stop()
+# --- FUNÇÃO DE CONEXÃO COM O BANCO DE DADOS (Refatorada) ---
+def connect_to_firestore():
+    """
+    Conecta ao Firestore usando as credenciais armazenadas nos secrets do Streamlit.
+    Retorna um objeto de cliente do Firestore ou None em caso de falha.
+    """
+    try:
+        # Pega a "tabela" [firestore] dos secrets
+        creds_toml = st.secrets["firestore"]
+        # Converte o formato TOML para um dicionário Python que a biblioteca entende
+        creds_dict = dict(creds_toml)
+        db = firestore.Client.from_service_account_info(creds_dict)
+        return db
+    except Exception as e:
+        st.error(f"Falha ao conectar no Firestore com as credenciais: {e}")
+        st.stop() # Para a execução do app se não conseguir conectar
 
-# --- INTERFACE ---
+# --- EXECUÇÃO PRINCIPAL DA INTERFACE ---
+
+# Inicializa a conexão
+db = connect_to_firestore()
+
 st.set_page_config(layout="wide", page_title="CIC - PixGuardiao")
 st.title("🛡️ Central de Inteligência Conectada (CIC)")
 st.markdown("Esta interface chama a API real e lê o log de auditoria do Firestore.")
@@ -30,19 +43,21 @@ with col1:
         with st.spinner("Chamando a API do PixGuardiao..."):
             try:
                 payload = {"data": {"id_transacao": id_transacao_input}}
-                response = requests.post(API_URL, json=payload)
+                response = requests.post(API_URL, json=payload, timeout=30)
                 response.raise_for_status()
                 st.success("API respondeu com sucesso!")
                 st.json(response.json())
             except requests.exceptions.RequestException as e:
                 st.error(f"Erro ao chamar a API: {e}")
-                st.json(e.response.json() if e.response else "Nenhuma resposta do servidor.")
+                if e.response:
+                    st.json(e.response.json())
 
 with col2:
     st.subheader("Log de Auditoria (Lido do Firestore)")
     
     if st.button("Atualizar Log"):
-        pass
+        # O st.rerun() é a forma moderna de atualizar a página no Streamlit
+        st.rerun()
         
     try:
         with st.spinner("Lendo os últimos registros do Firestore..."):
@@ -50,14 +65,14 @@ with col2:
             log_data = [doc.to_dict() for doc in docs]
             
             if log_data:
+                # Converte os timestamps para um formato legível
+                for item in log_data:
+                    if 'timestamp_utc' in item:
+                        item['timestamp_utc'] = item['timestamp_utc'].strftime('%Y-%m-%d %H:%M:%S')
+                
                 df = pd.DataFrame(log_data)
-                st.dataframe(df)
+                st.dataframe(df, use_container_width=True)
             else:
                 st.write("Nenhum registro de auditoria encontrado.")
     except Exception as e:
         st.error(f"Erro ao ler o Firestore: {e}")
-        
-if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 8081))
-    os.system(f"streamlit run painel_cic.py --server.port={port} --server.headless=true --server.enableCORS=false")
